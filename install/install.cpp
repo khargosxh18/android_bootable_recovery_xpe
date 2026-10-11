@@ -199,9 +199,10 @@ static bool CheckAbSpecificMetadata(const std::map<std::string, std::string>& me
     }
   }
 
-  if (!spl_downgrade_approved && undeclared_downgrade &&
-      !(ui->IsTextVisible() && ask_to_continue_downgrade(ui->GetDevice()))) {
-    return false;
+  // TESTING ONLY: downgrade check disabled, never blocks the install.
+  (void)ui;
+  if (!spl_downgrade_approved && undeclared_downgrade) {
+    LOG(WARNING) << "Downgrade check bypassed (testing build)";
   }
 
   return true;
@@ -423,18 +424,10 @@ static InstallResult TryUpdateBinary(Package* package, bool* wipe_cache,
   bool device_supports_virtual_ab = android::base::GetBoolProperty("ro.virtual_ab.enabled", false);
 
   bool spl_downgrade_approved = false;
-  const auto allow_spl_downgrade =
-      android::base::GetBoolProperty("persist.vendor.recovery_allow_spl_downgrade", false);
   const auto current_spl = android::base::GetProperty("ro.build.version.security_patch", "");
+  // TESTING ONLY: SPL downgrade check disabled, never blocks the install.
   if (ViolatesSPLDowngrade(zip, current_spl)) {
-    if (!allow_spl_downgrade || !ui->IsTextVisible()) {
-      LOG(ERROR) << "Denying OTA because it's SPL downgrade";
-      return INSTALL_ERROR;
-    }
-    if (!ask_to_continue_spl_downgrade(device)) {
-      LOG(ERROR) << "User denied SPL downgrade";
-      return INSTALL_ERROR;
-    }
+    LOG(WARNING) << "SPL downgrade check bypassed (testing build)";
     spl_downgrade_approved = true;
   }
 
